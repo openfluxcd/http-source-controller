@@ -1,0 +1,27 @@
+# permissions for end users to edit https.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: http-controller
+    app.kubernetes.io/managed-by: kustomize
+  name: http-editor-role
+rules:
+- apiGroups:
+  - openfluxcd.openfluxcd
+  resources:
+  - https
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - openfluxcd.openfluxcd
+  resources:
+  - https/status
+  verbs:
+  - get
