@@ -35,8 +35,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	artifactv1 "github.com/openfluxcd/artifact/api/v1alpha1"
-	openfluxcdv1alpha1 "github.com/openfluxcd/http-controller/api/v1alpha1"
-	"github.com/openfluxcd/http-controller/internal/controller"
+	openfluxcdv1alpha1 "github.com/openfluxcd/http-source-controller/api/v1alpha1"
+	"github.com/openfluxcd/http-source-controller/internal/controller"
 	//+kubebuilder:scaffold:imports
 )
 

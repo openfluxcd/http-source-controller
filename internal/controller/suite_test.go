@@ -32,7 +32,7 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	openfluxcdv1alpha1 "github.com/openfluxcd/http-controller/api/v1alpha1"
+	openfluxcdv1alpha1 "github.com/openfluxcd/http-source-controller/api/v1alpha1"
 	//+kubebuilder:scaffold:imports
 )
 

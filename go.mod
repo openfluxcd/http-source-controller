@@ -1,4 +1,4 @@
-module github.com/openfluxcd/http-controller
+module github.com/openfluxcd/http-source-controller
 
 go 1.22.4
 

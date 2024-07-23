@@ -5,8 +5,8 @@
 domain: openfluxcd
 layout:
 - go.kubebuilder.io/v4
-projectName: http-controller
-repo: github.com/openfluxcd/http-controller
+projectName: http-source-controller
+repo: github.com/openfluxcd/http-source-controller
 resources:
 - api:
     crdVersion: v1
@@ -15,6 +15,6 @@ resources:
   domain: openfluxcd
   group: openfluxcd
   kind: Http
-  path: github.com/openfluxcd/http-controller/api/v1alpha1
+  path: github.com/openfluxcd/http-source-controller/api/v1alpha1
   version: v1alpha1
 version: "3"

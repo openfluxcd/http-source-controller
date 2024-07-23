@@ -24,7 +24,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	openfluxcdv1alpha1 "github.com/openfluxcd/http-controller/api/v1alpha1"
+	openfluxcdv1alpha1 "github.com/openfluxcd/http-source-controller/api/v1alpha1"
 )
 
 // HttpReconciler reconciles a Http object

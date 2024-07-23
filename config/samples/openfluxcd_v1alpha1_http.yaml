@@ -2,7 +2,7 @@ apiVersion: openfluxcd.openfluxcd/v1alpha1
 kind: Http
 metadata:
   labels:
-    app.kubernetes.io/name: http-controller
+    app.kubernetes.io/name: http-source-controller
     app.kubernetes.io/managed-by: kustomize
   name: http-sample
 spec:

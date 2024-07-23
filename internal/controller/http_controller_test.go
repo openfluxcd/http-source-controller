@@ -27,7 +27,7 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	openfluxcdv1alpha1 "github.com/openfluxcd/http-controller/api/v1alpha1"
+	openfluxcdv1alpha1 "github.com/openfluxcd/http-source-controller/api/v1alpha1"
 )
 
 var _ = Describe("Http Controller", func() {

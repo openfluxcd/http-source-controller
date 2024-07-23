@@ -13,7 +13,7 @@ install = kustomize('config/default')
 # running process.
 objects = decode_yaml_stream(install)
 for o in objects:
-    if o.get('kind') == 'Deployment' and o.get('metadata').get('name') == 'http-controller':
+    if o.get('kind') == 'Deployment' and o.get('metadata').get('name') == 'http-source-controller':
         o['spec']['template']['spec']['containers'][0]['securityContext']['runAsNonRoot'] = False
         break
 
@@ -54,7 +54,7 @@ local_resource(
 entrypoint = ['/manager']
 dockerfile = 'tilt.dockerfile'
 docker_build_with_restart(
-    'ghcr.io/openfluxcd/http-controller',
+    'ghcr.io/openfluxcd/http-source-controller',
     '.',
     dockerfile = dockerfile,
     entrypoint = entrypoint,
