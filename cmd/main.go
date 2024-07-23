@@ -34,6 +34,7 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
+	artifactv1 "github.com/openfluxcd/artifact/api/v1alpha1"
 	openfluxcdv1alpha1 "github.com/openfluxcd/http-controller/api/v1alpha1"
 	"github.com/openfluxcd/http-controller/internal/controller"
 	//+kubebuilder:scaffold:imports
@@ -48,6 +49,7 @@ func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
 	utilruntime.Must(openfluxcdv1alpha1.AddToScheme(scheme))
+	utilruntime.Must(artifactv1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 
@@ -73,6 +75,7 @@ func main() {
 	flag.Parse()
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
+	ctx := ctrl.SetupSignalHandler()
 
 	// if the enable-http2 flag is false (the default), http/2 should be disabled
 	// due to its vulnerabilities. More specifically, disabling http/2 will
@@ -125,7 +128,7 @@ func main() {
 	if err = (&controller.HttpReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
+	}).SetupWithManager(ctx, mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Http")
 		os.Exit(1)
 	}

@@ -28,8 +28,31 @@ type HttpSpec struct {
 
 // HttpStatus defines the observed state of Http
 type HttpStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	// ObservedGeneration is the last reconciled generation.
+	// +optional
+	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
+
+	// +optional
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
+
+	// The last successfully applied revision.
+	// Equals the Revision of the applied Artifact from the referenced Source.
+	// +optional
+	LastAppliedRevision string `json:"lastAppliedRevision,omitempty"`
+
+	// LastAttemptedRevision is the revision of the last reconciliation attempt.
+	// +optional
+	LastAttemptedRevision string `json:"lastAttemptedRevision,omitempty"`
+}
+
+// GetConditions returns the status conditions of the object.
+func (in Http) GetConditions() []metav1.Condition {
+	return in.Status.Conditions
+}
+
+// SetConditions sets the status conditions on the object.
+func (in *Http) SetConditions(conditions []metav1.Condition) {
+	in.Status.Conditions = conditions
 }
 
 //+kubebuilder:object:root=true

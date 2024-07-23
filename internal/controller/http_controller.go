@@ -47,7 +47,7 @@ func (r *HttpReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *HttpReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *HttpReconciler) SetupWithManager(_ context.Context, mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&openfluxcdv1alpha1.Http{}).
 		Complete(r)
