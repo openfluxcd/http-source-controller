@@ -35,8 +35,14 @@ spec:
         - /manager
         args:
         - --leader-elect
+        - --storage-adv-addr=http-source-controller.http-source-controller.svc.cluster.local.
         image: openfluxcd/http-source-controller:latest
         name: manager
+        imagePullPolicy: Always
+        ports:
+          - containerPort: 9090
+            name: http
+            protocol: TCP
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:
@@ -60,5 +66,11 @@ spec:
           requests:
             cpu: 10m
             memory: 64Mi
+        volumeMounts:
+          - name: data
+            mountPath: /data
+      volumes:
+        - name: data
+          emptyDir: {}
       serviceAccountName: controller-manager
       terminationGracePeriodSeconds: 10

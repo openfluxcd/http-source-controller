@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
+	"path/filepath"
 )
 
 // Fetcher wraps an HTTP client.
@@ -49,7 +51,7 @@ type FetchOptions struct {
 }
 
 // Fetch constructs a request and does a client.Do with it.
-func (f *Fetcher) Fetch(ctx context.Context, url string, opts ...FetchOptionsFn) ([]byte, error) {
+func (f *Fetcher) Fetch(ctx context.Context, url, dir string, opts ...FetchOptionsFn) error {
 	opt := &FetchOptions{}
 	for _, fn := range opts {
 		fn(opt)
@@ -57,7 +59,7 @@ func (f *Fetcher) Fetch(ctx context.Context, url string, opts ...FetchOptionsFn)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
-		return nil, fmt.Errorf("failed to generate request for url '%s': %w", url, err)
+		return fmt.Errorf("failed to generate request for url '%s': %w", url, err)
 	}
 
 	if opt.username != "" && opt.password != "" {
@@ -70,7 +72,7 @@ func (f *Fetcher) Fetch(ctx context.Context, url string, opts ...FetchOptionsFn)
 
 	resp, err := f.client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch data: %w", err)
+		return fmt.Errorf("failed to fetch data: %w", err)
 	}
 
 	defer func() {
@@ -80,13 +82,19 @@ func (f *Fetcher) Fetch(ctx context.Context, url string, opts ...FetchOptionsFn)
 	}()
 
 	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
-		return nil, fmt.Errorf("failed to fetch url content with status code %d", resp.StatusCode)
+		return fmt.Errorf("failed to fetch url content with status code %d", resp.StatusCode)
 	}
 
-	content, err := io.ReadAll(resp.Body)
+	file, err := os.Create(filepath.Join(dir, "archive.tar.gz"))
 	if err != nil {
-		return nil, fmt.Errorf("failed to read body: %w", err)
+		return fmt.Errorf("failed to open file for writing: %w", err)
 	}
 
-	return content, nil
+	defer file.Close()
+
+	if _, err := io.Copy(file, resp.Body); err != nil {
+		return fmt.Errorf("failed to copy file content: %w", err)
+	}
+
+	return nil
 }

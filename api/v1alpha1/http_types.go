@@ -55,6 +55,14 @@ func (in *Http) SetConditions(conditions []metav1.Condition) {
 	in.Status.Conditions = conditions
 }
 
+func (in *Http) GetObjectMeta() *metav1.ObjectMeta {
+	return &in.ObjectMeta
+}
+
+func (in *Http) GetKind() string {
+	return "Http"
+}
+
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 

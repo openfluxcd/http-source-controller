@@ -37,6 +37,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	artifactv1 "github.com/openfluxcd/artifact/api/v1alpha1"
+	"github.com/openfluxcd/controller-manager/server"
 	openfluxcdv1alpha1 "github.com/openfluxcd/http-source-controller/api/v1alpha1"
 	"github.com/openfluxcd/http-source-controller/internal/controller"
 	"github.com/openfluxcd/http-source-controller/internal/fetcher"
@@ -44,8 +45,10 @@ import (
 )
 
 var (
-	scheme   = runtime.NewScheme()
-	setupLog = ctrl.Log.WithName("setup")
+	scheme                   = runtime.NewScheme()
+	setupLog                 = ctrl.Log.WithName("setup")
+	artifactRetentionTTL     = 60 * time.Second
+	artifactRetentionRecords = 2
 )
 
 func init() {
@@ -57,11 +60,17 @@ func init() {
 }
 
 func main() {
-	var metricsAddr string
-	var enableLeaderElection bool
-	var probeAddr string
-	var secureMetrics bool
-	var enableHTTP2 bool
+	var (
+		metricsAddr          string
+		enableLeaderElection bool
+		probeAddr            string
+		secureMetrics        bool
+		enableHTTP2          bool
+		storagePath          string
+		storageAddr          string
+		storageAdvAddr       string
+	)
+
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
@@ -71,6 +80,10 @@ func main() {
 		"If set the metrics endpoint is served securely")
 	flag.BoolVar(&enableHTTP2, "enable-http2", false,
 		"If set, HTTP/2 will be enabled for the metrics and webhook servers")
+	flag.StringVar(&storageAddr, "storage-addr", ":9090", "The address the static file server binds to.")
+	flag.StringVar(&storageAdvAddr, "storage-adv-addr", "", "The advertised address of the static file server.")
+	flag.StringVar(&storagePath, "storage-path", "/data", "The local storage path.")
+
 	opts := zap.Options{
 		Development: true,
 	}
@@ -131,11 +144,17 @@ func main() {
 	fetch := fetcher.NewFetcher(&http.Client{
 		Timeout: 15 * time.Second,
 	})
+	starter, storage, err := server.InitializeStorage(storagePath, storageAdvAddr, artifactRetentionTTL, artifactRetentionRecords)
+	if err != nil {
+		setupLog.Error(err, "unable to initialize storage")
+		os.Exit(1)
+	}
 
 	if err = (&controller.HttpReconciler{
 		Client:  mgr.GetClient(),
 		Scheme:  mgr.GetScheme(),
 		Fetcher: fetch,
+		Storage: storage,
 	}).SetupWithManager(ctx, mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Http")
 		os.Exit(1)
@@ -150,6 +169,17 @@ func main() {
 		setupLog.Error(err, "unable to set up ready check")
 		os.Exit(1)
 	}
+
+	go func() {
+		// Block until our controller manager is elected leader. We presume our
+		// entire process will terminate if we lose leadership, so we don't need
+		// to handle that.
+		<-mgr.Elected()
+
+		if err := starter(storagePath, storageAddr); err != nil {
+			setupLog.Error(err, "unable to start storage server")
+		}
+	}()
 
 	setupLog.Info("starting manager")
 	if err := mgr.Start(ctx); err != nil {

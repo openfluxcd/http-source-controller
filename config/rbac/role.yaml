@@ -5,6 +5,18 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
+  - openfluxcd.mandelsoft.org
+  resources:
+  - artifacts
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
   - openfluxcd.openfluxcd
   resources:
   - https
