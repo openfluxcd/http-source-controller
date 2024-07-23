@@ -39,10 +39,11 @@ spec:
           spec:
             description: HttpSpec defines the desired state of Http
             properties:
-              foo:
-                description: Foo is an example field of Http. Edit http_types.go to
-                  remove/update
+              url:
+                description: URL defines where to get the archive from.
                 type: string
+            required:
+            - url
             type: object
           status:
             description: HttpStatus defines the observed state of Http

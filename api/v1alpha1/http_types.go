@@ -22,8 +22,8 @@ import (
 
 // HttpSpec defines the desired state of Http
 type HttpSpec struct {
-	// Foo is an example field of Http. Edit http_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	// URL defines where to get the archive from.
+	URL string `json:"url"`
 }
 
 // HttpStatus defines the observed state of Http

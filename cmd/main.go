@@ -19,8 +19,11 @@ package main
 import (
 	"crypto/tls"
 	"flag"
+	"net/http"
 	"os"
+	"time"
 
+	"github.com/openfluxcd/http-source-controller/internal/fetcher"
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -125,9 +128,14 @@ func main() {
 		os.Exit(1)
 	}
 
+	fetch := fetcher.NewFetcher(&http.Client{
+		Timeout: 15 * time.Second,
+	})
+
 	if err = (&controller.HttpReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
+		Client:  mgr.GetClient(),
+		Scheme:  mgr.GetScheme(),
+		Fetcher: fetch,
 	}).SetupWithManager(ctx, mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Http")
 		os.Exit(1)

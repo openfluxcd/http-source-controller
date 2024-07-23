@@ -1,2 +1,7 @@
 resources:
 - manager.yaml
+
+images:
+  - name: openfluxcd/http-source-controller
+    newName: ghcr.io/openfluxcd/http-source-controller
+    newTag: latest
