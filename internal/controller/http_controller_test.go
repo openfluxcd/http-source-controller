@@ -40,6 +40,8 @@ func TestHttpReconciler_Reconcile(t *testing.T) {
 	testserver := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("content"))
 	}))
+	defer testserver.Close()
+
 	tmp, err := os.MkdirTemp("", "test-reconcile")
 	require.NoError(t, err)
 	defer os.RemoveAll(tmp)
@@ -71,7 +73,7 @@ func TestHttpReconciler_Reconcile(t *testing.T) {
 							Namespace: "default",
 						},
 						Spec: v1alpha1.HttpSpec{
-							URL: "http://example.com",
+							URL: testserver.URL,
 						},
 					})),
 				Scheme:  env.scheme,
@@ -84,15 +86,12 @@ func TestHttpReconciler_Reconcile(t *testing.T) {
 					require.NoError(t, err)
 				},
 				AssertObjects: func(t *testing.T, client client.Client) {
-					http := &v1alpha1.Http{}
-					err := client.Get(context.TODO(), types.NamespacedName{Name: "test-http", Namespace: "default"}, http)
-					require.NoError(t, err)
-					require.Equal(t, "http://example.com", http.Spec.URL)
-
 					artifact := &artifactv1.Artifact{}
 					err = client.Get(context.TODO(), types.NamespacedName{Name: "test-http", Namespace: "default"}, artifact)
 					require.NoError(t, err)
-					assert.Equal(t, "http", artifact.Spec.URL)
+					// <kind>/<namespace>/name>/<filename>
+					// The base name must not be there because the file server already adds that.
+					assert.Equal(t, "http://hostname/http/default/test-http/b1946ac92492d2347c6235b4d2611184.tar.gz", artifact.Spec.URL)
 				},
 			},
 			args: args{

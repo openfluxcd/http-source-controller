@@ -21,7 +21,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"time"
 
 	"github.com/fluxcd/pkg/runtime/patch"
 	artifactv1 "github.com/openfluxcd/artifact/api/v1alpha1"
@@ -29,7 +28,6 @@ import (
 	openfluxcdv1alpha1 "github.com/openfluxcd/http-source-controller/api/v1alpha1"
 	"github.com/openfluxcd/http-source-controller/internal/fetcher"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -105,28 +103,23 @@ func (r *HttpReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctr
 		return ctrl.Result{}, fmt.Errorf("failed to find artifact: %w", err)
 	}
 
-	if artifact == nil {
-		logger.Info("artifact not found")
-		artifact = &artifactv1.Artifact{}
-		artifact.Name = obj.Name // maybe this should be generated..?
-		artifact.Namespace = obj.Namespace
-		artifact.Spec = artifactv1.ArtifactSpec{
-			URL: "http:// " + r.Storage.BasePath, // maybe this is where we set the base? &idk
-			LastUpdateTime: metav1.Time{
-				Time: time.Now(),
-			},
-		}
-	}
-
 	if err := r.Storage.ReconcileStorage(ctx, obj, artifact); err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to reconcile storage: %w", err)
 	}
 
+	// It's important to create this AFTER we reconcile the storage.
+	if artifact == nil {
+		logger.Info("artifact not found")
+		genArt := r.Storage.NewArtifactFor("Http", obj.GetObjectMeta(), "b1946ac92492d2347c6235b4d2611184", "b1946ac92492d2347c6235b4d2611184.tar.gz")
+		artifact = &genArt
+	}
+
 	// Got to figure out how to nicely provide revision, some kind of version or something of the downloaded file
 	// and the file name which should just be a hash of some kind.
-	if err := r.Storage.ReconcileArtifact(ctx, obj, "revision", tmpDir, "archive", func(artifact artifactv1.Artifact, s string) error {
+	// Revision here is the hash of the content of the downloaded file for example. From where we get that that's a different question.
+	if err := r.Storage.ReconcileArtifact(ctx, obj, artifact, "b1946ac92492d2347c6235b4d2611184", tmpDir, "b1946ac92492d2347c6235b4d2611184.tar.gz", func(artifact *artifactv1.Artifact, s string) error {
 		// Archive directory to storage
-		if err := r.Storage.Archive(&artifact, tmpDir, nil); err != nil {
+		if err := r.Storage.Archive(artifact, tmpDir, nil); err != nil {
 			return fmt.Errorf("unable to archive artifact to storage: %w", err)
 		}
 
@@ -134,9 +127,6 @@ func (r *HttpReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctr
 	}); err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to reconcile artifact: %w", err)
 	}
-
-	//obj.Status.Artifact = artifact.DeepCopy()
-	// This is where we either update the existing artifact, or create a new one.
 
 	// create or update the component descriptor kubernetes resource
 	// we don't need to update it
@@ -148,6 +138,7 @@ func (r *HttpReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctr
 		}
 
 		// update some stuff here, like revision and such.
+		artifact.Spec.Revision = "b1946ac92492d2347c6235b4d2611184"
 
 		return nil
 	}); err != nil {
