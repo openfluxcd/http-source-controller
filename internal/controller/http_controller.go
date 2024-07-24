@@ -104,10 +104,11 @@ func (r *HttpReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctr
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to find artifact: %w", err)
 	}
+
 	if artifact == nil {
 		logger.Info("artifact not found")
 		artifact = &artifactv1.Artifact{}
-		artifact.Name = "generate-a-name-for-this-" + obj.Name
+		artifact.Name = obj.Name // maybe this should be generated..?
 		artifact.Namespace = obj.Namespace
 		artifact.Spec = artifactv1.ArtifactSpec{
 			URL: "http:// " + r.Storage.BasePath, // maybe this is where we set the base? &idk
@@ -123,7 +124,7 @@ func (r *HttpReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctr
 
 	// Got to figure out how to nicely provide revision, some kind of version or something of the downloaded file
 	// and the file name which should just be a hash of some kind.
-	if err := r.Storage.ReconcileArtifact(ctx, obj, "revision", tmpDir, "archive.tar.gz", func(artifact artifactv1.Artifact, s string) error {
+	if err := r.Storage.ReconcileArtifact(ctx, obj, "revision", tmpDir, "archive", func(artifact artifactv1.Artifact, s string) error {
 		// Archive directory to storage
 		if err := r.Storage.Archive(&artifact, tmpDir, nil); err != nil {
 			return fmt.Errorf("unable to archive artifact to storage: %w", err)

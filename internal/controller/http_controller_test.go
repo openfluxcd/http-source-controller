@@ -18,67 +18,105 @@ package controller
 
 import (
 	"context"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"testing"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-
+	artifactv1 "github.com/openfluxcd/artifact/api/v1alpha1"
+	"github.com/openfluxcd/controller-manager/storage"
+	"github.com/openfluxcd/http-source-controller/api/v1alpha1"
+	"github.com/openfluxcd/http-source-controller/internal/fetcher"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	openfluxcdv1alpha1 "github.com/openfluxcd/http-source-controller/api/v1alpha1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
+	controllerruntime "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-var _ = Describe("Http Controller", func() {
-	Context("When reconciling a resource", func() {
-		const resourceName = "test-resource"
+func TestHttpReconciler_Reconcile(t *testing.T) {
+	testserver := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("content"))
+	}))
+	tmp, err := os.MkdirTemp("", "test-reconcile")
+	require.NoError(t, err)
+	defer os.RemoveAll(tmp)
 
-		ctx := context.Background()
+	type fields struct {
+		Client        client.Client
+		Scheme        *runtime.Scheme
+		Fetcher       *fetcher.Fetcher
+		Storage       *storage.Storage
+		AssertErr     func(t *testing.T, err error)
+		AssertObjects func(t *testing.T, client client.Client)
+	}
+	type args struct {
+		ctx context.Context
+		req controllerruntime.Request
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+	}{
+		{
+			name: "should return no error if the request is valid",
+			fields: fields{
+				Client: env.FakeKubeClient(
+					WithObjects(&v1alpha1.Http{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "test-http",
+							Namespace: "default",
+						},
+						Spec: v1alpha1.HttpSpec{
+							URL: "http://example.com",
+						},
+					})),
+				Scheme:  env.scheme,
+				Fetcher: fetcher.NewFetcher(testserver.Client()),
+				Storage: &storage.Storage{
+					BasePath: tmp,
+					Hostname: "hostname",
+				},
+				AssertErr: func(t *testing.T, err error) {
+					require.NoError(t, err)
+				},
+				AssertObjects: func(t *testing.T, client client.Client) {
+					http := &v1alpha1.Http{}
+					err := client.Get(context.TODO(), types.NamespacedName{Name: "test-http", Namespace: "default"}, http)
+					require.NoError(t, err)
+					require.Equal(t, "http://example.com", http.Spec.URL)
 
-		typeNamespacedName := types.NamespacedName{
-			Name:      resourceName,
-			Namespace: "default", // TODO(user):Modify as needed
-		}
-		http := &openfluxcdv1alpha1.Http{}
-
-		BeforeEach(func() {
-			By("creating the custom resource for the Kind Http")
-			err := k8sClient.Get(ctx, typeNamespacedName, http)
-			if err != nil && errors.IsNotFound(err) {
-				resource := &openfluxcdv1alpha1.Http{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      resourceName,
+					artifact := &artifactv1.Artifact{}
+					err = client.Get(context.TODO(), types.NamespacedName{Name: "test-http", Namespace: "default"}, artifact)
+					require.NoError(t, err)
+					assert.Equal(t, "http", artifact.Spec.URL)
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				req: controllerruntime.Request{
+					NamespacedName: types.NamespacedName{
+						Name:      "test-http",
 						Namespace: "default",
 					},
-					// TODO(user): Specify other spec details if needed.
-				}
-				Expect(k8sClient.Create(ctx, resource)).To(Succeed())
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &HttpReconciler{
+				Client:  tt.fields.Client,
+				Scheme:  tt.fields.Scheme,
+				Fetcher: tt.fields.Fetcher,
+				Storage: tt.fields.Storage,
 			}
+			_, err := r.Reconcile(tt.args.ctx, tt.args.req)
+			tt.fields.AssertErr(t, err)
+			tt.fields.AssertObjects(t, tt.fields.Client)
 		})
-
-		AfterEach(func() {
-			// TODO(user): Cleanup logic after each test, like removing the resource instance.
-			resource := &openfluxcdv1alpha1.Http{}
-			err := k8sClient.Get(ctx, typeNamespacedName, resource)
-			Expect(err).NotTo(HaveOccurred())
-
-			By("Cleanup the specific resource instance Http")
-			Expect(k8sClient.Delete(ctx, resource)).To(Succeed())
-		})
-		It("should successfully reconcile the resource", func() {
-			By("Reconciling the created resource")
-			controllerReconciler := &HttpReconciler{
-				Client: k8sClient,
-				Scheme: k8sClient.Scheme(),
-			}
-
-			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{
-				NamespacedName: typeNamespacedName,
-			})
-			Expect(err).NotTo(HaveOccurred())
-			// TODO(user): Add more specific assertions depending on your controller's reconciliation logic.
-			// Example: If you expect a certain status condition after reconciliation, verify it here.
-		})
-	})
-})
+	}
+}
