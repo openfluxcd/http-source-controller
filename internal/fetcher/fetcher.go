@@ -2,6 +2,8 @@ package fetcher
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"net/http"
@@ -51,7 +53,7 @@ type FetchOptions struct {
 }
 
 // Fetch constructs a request and does a client.Do with it.
-func (f *Fetcher) Fetch(ctx context.Context, url, dir string, opts ...FetchOptionsFn) error {
+func (f *Fetcher) Fetch(ctx context.Context, url, dir string, opts ...FetchOptionsFn) (string, error) {
 	opt := &FetchOptions{}
 	for _, fn := range opts {
 		fn(opt)
@@ -59,7 +61,7 @@ func (f *Fetcher) Fetch(ctx context.Context, url, dir string, opts ...FetchOptio
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
-		return fmt.Errorf("failed to generate request for url '%s': %w", url, err)
+		return "", fmt.Errorf("failed to generate request for url '%s': %w", url, err)
 	}
 
 	if opt.username != "" && opt.password != "" {
@@ -72,7 +74,7 @@ func (f *Fetcher) Fetch(ctx context.Context, url, dir string, opts ...FetchOptio
 
 	resp, err := f.client.Do(req)
 	if err != nil {
-		return fmt.Errorf("failed to fetch data: %w", err)
+		return "", fmt.Errorf("failed to fetch data: %w", err)
 	}
 
 	defer func() {
@@ -82,19 +84,25 @@ func (f *Fetcher) Fetch(ctx context.Context, url, dir string, opts ...FetchOptio
 	}()
 
 	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
-		return fmt.Errorf("failed to fetch url content with status code %d", resp.StatusCode)
+		return "", fmt.Errorf("failed to fetch url content with status code %d", resp.StatusCode)
 	}
 
 	file, err := os.Create(filepath.Join(dir, "archive.tar.gz"))
 	if err != nil {
-		return fmt.Errorf("failed to open file for writing: %w", err)
+		return "", fmt.Errorf("failed to open file for writing: %w", err)
 	}
 
 	defer file.Close()
 
 	if _, err := io.Copy(file, resp.Body); err != nil {
-		return fmt.Errorf("failed to copy file content: %w", err)
+		return "", fmt.Errorf("failed to copy file content: %w", err)
 	}
 
-	return nil
+	// Create a new SHA256 hash
+	hash := sha256.New()
+	if _, err := io.Copy(hash, file); err != nil {
+		return "", fmt.Errorf("failed to copy file content: %w", err)
+	}
+
+	return hex.EncodeToString(hash.Sum(nil)), nil
 }

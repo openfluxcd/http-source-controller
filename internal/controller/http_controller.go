@@ -25,8 +25,6 @@ import (
 	"github.com/fluxcd/pkg/runtime/patch"
 	artifactv1 "github.com/openfluxcd/artifact/api/v1alpha1"
 	"github.com/openfluxcd/controller-manager/storage"
-	openfluxcdv1alpha1 "github.com/openfluxcd/http-source-controller/api/v1alpha1"
-	"github.com/openfluxcd/http-source-controller/internal/fetcher"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -36,6 +34,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
+
+	openfluxcdv1alpha1 "github.com/openfluxcd/http-source-controller/api/v1alpha1"
+	"github.com/openfluxcd/http-source-controller/internal/fetcher"
 )
 
 // HttpReconciler reconciles a Http object
@@ -43,7 +44,6 @@ type HttpReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
 
-	// TODO: make these interfaces once the usage crystallizes.
 	Fetcher *fetcher.Fetcher
 	Storage *storage.Storage
 }
@@ -94,7 +94,8 @@ func (r *HttpReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctr
 	}()
 
 	// reconcile the source and put it into the folder that the archive is going to serve.
-	if err := r.Fetcher.Fetch(ctx, obj.Spec.URL, tmpDir); err != nil {
+	digest, err := r.Fetcher.Fetch(ctx, obj.Spec.URL, tmpDir)
+	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to fetch http source: %w", err)
 	}
 
@@ -110,14 +111,12 @@ func (r *HttpReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctr
 	// It's important to create this AFTER we reconcile the storage.
 	if artifact == nil {
 		logger.Info("artifact not found")
-		genArt := r.Storage.NewArtifactFor("Http", obj.GetObjectMeta(), "b1946ac92492d2347c6235b4d2611184", "b1946ac92492d2347c6235b4d2611184.tar.gz")
+		genArt := r.Storage.NewArtifactFor("Http", obj.GetObjectMeta(), digest, digest+".tar.gz")
 		artifact = &genArt
 	}
 
-	// Got to figure out how to nicely provide revision, some kind of version or something of the downloaded file
-	// and the file name which should just be a hash of some kind.
-	// Revision here is the hash of the content of the downloaded file for example. From where we get that that's a different question.
-	if err := r.Storage.ReconcileArtifact(ctx, obj, artifact, "b1946ac92492d2347c6235b4d2611184", tmpDir, "b1946ac92492d2347c6235b4d2611184.tar.gz", func(artifact *artifactv1.Artifact, s string) error {
+	// Revision here is the hash of the content of the downloaded file for example.
+	if err := r.Storage.ReconcileArtifact(ctx, obj, artifact, digest, tmpDir, digest+".tar.gz", func(artifact *artifactv1.Artifact, s string) error {
 		// Archive directory to storage
 		if err := r.Storage.Archive(artifact, tmpDir, nil); err != nil {
 			return fmt.Errorf("unable to archive artifact to storage: %w", err)
@@ -128,8 +127,6 @@ func (r *HttpReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctr
 		return ctrl.Result{}, fmt.Errorf("failed to reconcile artifact: %w", err)
 	}
 
-	// create or update the component descriptor kubernetes resource
-	// we don't need to update it
 	if _, err = controllerutil.CreateOrUpdate(ctx, r.Client, artifact, func() error {
 		if artifact.ObjectMeta.CreationTimestamp.IsZero() {
 			if err := controllerutil.SetOwnerReference(obj, artifact, r.Scheme); err != nil {
@@ -137,8 +134,8 @@ func (r *HttpReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctr
 			}
 		}
 
-		// update some stuff here, like revision and such.
-		artifact.Spec.Revision = "b1946ac92492d2347c6235b4d2611184"
+		artifact.Spec.Revision = digest
+		artifact.Spec.Digest = digest
 
 		return nil
 	}); err != nil {
@@ -172,6 +169,5 @@ func (r *HttpReconciler) findArtifact(ctx context.Context, object client.Object)
 		}
 	}
 
-	// check if the name is not empty or we don't care because it will be set somehow?
 	return nil, nil
 }

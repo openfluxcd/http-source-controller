@@ -6,13 +6,11 @@ go 1.22.4
 // xref: https://github.com/opencontainers/go-digest/pull/66
 replace github.com/opencontainers/go-digest => github.com/opencontainers/go-digest v1.0.1-0.20220411205349-bde1400a84be
 
-replace github.com/openfluxcd/controller-manager => /Users/skarlso/goprojects/SAP/controller-manager
-
 require (
 	github.com/fluxcd/pkg/runtime v0.47.1
 	github.com/fluxcd/source-controller/api v1.3.0
 	github.com/openfluxcd/artifact v0.0.0-20240716155959-1444c21d5f7c
-	github.com/openfluxcd/controller-manager v0.0.0-20240723064632-9cedfcc74ba8
+	github.com/openfluxcd/controller-manager v0.0.0-20240724125034-6d1e5408eb8b
 	github.com/stretchr/testify v1.9.0
 	k8s.io/api v0.30.0
 	k8s.io/apimachinery v0.30.3

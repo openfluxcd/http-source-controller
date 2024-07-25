@@ -91,7 +91,8 @@ func TestHttpReconciler_Reconcile(t *testing.T) {
 					require.NoError(t, err)
 					// <kind>/<namespace>/name>/<filename>
 					// The base name must not be there because the file server already adds that.
-					assert.Equal(t, "http://hostname/http/default/test-http/b1946ac92492d2347c6235b4d2611184.tar.gz", artifact.Spec.URL)
+					assert.Equal(t, "http://hostname/http/default/test-http/e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855.tar.gz", artifact.Spec.URL)
+					assert.Equal(t, "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", artifact.Spec.Revision)
 				},
 			},
 			args: args{
