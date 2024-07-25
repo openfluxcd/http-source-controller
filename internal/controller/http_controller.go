@@ -30,7 +30,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
@@ -98,56 +97,21 @@ func (r *HttpReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctr
 		return ctrl.Result{}, fmt.Errorf("failed to fetch http source: %w", err)
 	}
 
-	// find any existing artifacts
-	artifact, err := r.findArtifact(ctx, obj)
-	if err != nil {
-		return ctrl.Result{}, fmt.Errorf("failed to find artifact: %w", err)
-	}
-
-	if err := r.Storage.ReconcileStorage(ctx, obj, artifact); err != nil {
+	// Reconcile the storage to create the main location and prepare the server.
+	if err := r.Storage.ReconcileStorage(ctx, obj); err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to reconcile storage: %w", err)
 	}
 
-	// It's important to create this AFTER we reconcile the storage.
-	if artifact == nil {
-		logger.Info("artifact not found")
-		genArt := r.Storage.NewArtifactFor("Http", obj.GetObjectMeta(), digest, digest+".tar.gz")
-		artifact = &genArt
-	} else {
-		logger.Info("artifact found", "revision", artifact.Spec.Revision)
-
-	}
-
 	// Revision here is the hash of the content of the downloaded file for example.
-	if err := r.Storage.ReconcileArtifact(ctx, obj, artifact, digest, tmpDir, digest+".tar.gz", func(art *artifactv1.Artifact, s string) error {
+	if err := r.Storage.ReconcileArtifact(ctx, obj, digest, tmpDir, digest+".tar.gz", func(art *artifactv1.Artifact, s string) error {
 		// Archive directory to storage
-		if err := r.Storage.Archive(artifact, tmpDir, nil); err != nil {
+		if err := r.Storage.Archive(art, tmpDir, nil); err != nil {
 			return fmt.Errorf("unable to archive artifact to storage: %w", err)
 		}
 
 		return nil
 	}); err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to reconcile artifact: %w", err)
-	}
-
-	createArtifact := artifact.DeepCopy()
-	if _, err = controllerutil.CreateOrUpdate(ctx, r.Client, createArtifact, func() error {
-		if artifact.ObjectMeta.CreationTimestamp.IsZero() {
-			if err := controllerutil.SetOwnerReference(obj, artifact, r.Scheme); err != nil {
-				return fmt.Errorf("failed to set owner reference: %w", err)
-			}
-		}
-
-		// mutate the existing object with the outside object.
-		createArtifact.Spec.Revision = artifact.Spec.Revision
-		createArtifact.Spec.Digest = artifact.Spec.Digest
-		createArtifact.Spec.URL = artifact.Spec.URL
-		createArtifact.Spec.LastUpdateTime = artifact.Spec.LastUpdateTime
-		createArtifact.Spec.Size = artifact.Spec.Size
-
-		return nil
-	}); err != nil {
-		return ctrl.Result{}, fmt.Errorf("failed to create/update artifact: %w", err)
 	}
 
 	return ctrl.Result{}, nil

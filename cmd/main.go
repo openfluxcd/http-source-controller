@@ -144,7 +144,7 @@ func main() {
 	fetch := fetcher.NewFetcher(&http.Client{
 		Timeout: 15 * time.Second,
 	})
-	starter, storage, err := server.InitializeStorage(storagePath, storageAdvAddr, artifactRetentionTTL, artifactRetentionRecords)
+	starter, storage, err := server.InitializeStorage(mgr.GetClient(), mgr.GetScheme(), storagePath, storageAdvAddr, artifactRetentionTTL, artifactRetentionRecords)
 	if err != nil {
 		setupLog.Error(err, "unable to initialize storage")
 		os.Exit(1)

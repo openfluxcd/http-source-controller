@@ -124,6 +124,8 @@ github.com/openfluxcd/controller-manager v0.0.0-20240725104545-3fc107025a0f h1:Y
 github.com/openfluxcd/controller-manager v0.0.0-20240725104545-3fc107025a0f/go.mod h1:nU1V9NsJTu3mq3lZvk/r7gn/+WpCE7/rC3drZBD5eJg=
 github.com/openfluxcd/controller-manager v0.0.0-20240725135903-2daf7fa4bef8 h1:2FPEUpX8b7km5OsoUeyN3va3Iq4vUMFkywWPuj0AKqE=
 github.com/openfluxcd/controller-manager v0.0.0-20240725135903-2daf7fa4bef8/go.mod h1:nU1V9NsJTu3mq3lZvk/r7gn/+WpCE7/rC3drZBD5eJg=
+github.com/openfluxcd/controller-manager v0.0.0-20240725152602-ba6a96dba714 h1:z2eYCvrVOscvovyqJJ/WA6iaJdUQVoewmzYOsXzIbUk=
+github.com/openfluxcd/controller-manager v0.0.0-20240725152602-ba6a96dba714/go.mod h1:I/eY5R+5rNDkV1N37lVqshKRu1F6BF7x70qf9/TTJ28=
 github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
 github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
