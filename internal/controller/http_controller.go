@@ -135,7 +135,7 @@ func (r *HttpReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctr
 		}
 
 		artifact.Spec.Revision = digest
-		artifact.Spec.Digest = digest
+		// digest is set during archive process. It ought to be in the status instead?
 
 		return nil
 	}); err != nil {
