@@ -120,8 +120,8 @@ github.com/opencontainers/go-digest/blake3 v0.0.0-20240426182413-22b78e47854a h1
 github.com/opencontainers/go-digest/blake3 v0.0.0-20240426182413-22b78e47854a/go.mod h1:kqQaIc6bZstKgnGpL7GD5dWoLKbA6mH1Y9ULjGImBnM=
 github.com/openfluxcd/artifact v0.0.0-20240716155959-1444c21d5f7c h1:/PxMr0oPWh9JW/PDCjHCZuYhXRINUo7UTOApmSY9TD8=
 github.com/openfluxcd/artifact v0.0.0-20240716155959-1444c21d5f7c/go.mod h1:oW3t3lDk9TvP0EQEQzCzQH7qwO6H7OCHmF/xbAXhMyI=
-github.com/openfluxcd/controller-manager v0.0.0-20240724125034-6d1e5408eb8b h1:91chnEmn6MtWu8TRD4x2Qw/f9UEEzoSghVdkFQ0LTTw=
-github.com/openfluxcd/controller-manager v0.0.0-20240724125034-6d1e5408eb8b/go.mod h1:nU1V9NsJTu3mq3lZvk/r7gn/+WpCE7/rC3drZBD5eJg=
+github.com/openfluxcd/controller-manager v0.0.0-20240725104545-3fc107025a0f h1:YLQrctBq65pUlT8JDeJ673a8MisJV38m2mwQmOhI6C8=
+github.com/openfluxcd/controller-manager v0.0.0-20240725104545-3fc107025a0f/go.mod h1:nU1V9NsJTu3mq3lZvk/r7gn/+WpCE7/rC3drZBD5eJg=
 github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
 github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=

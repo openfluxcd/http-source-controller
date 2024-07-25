@@ -27,7 +27,6 @@ import (
 	"github.com/openfluxcd/controller-manager/storage"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -99,6 +98,7 @@ func (r *HttpReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctr
 		return ctrl.Result{}, fmt.Errorf("failed to fetch http source: %w", err)
 	}
 
+	// find any existing artifacts
 	artifact, err := r.findArtifact(ctx, obj)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to find artifact: %w", err)
@@ -113,10 +113,13 @@ func (r *HttpReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctr
 		logger.Info("artifact not found")
 		genArt := r.Storage.NewArtifactFor("Http", obj.GetObjectMeta(), digest, digest+".tar.gz")
 		artifact = &genArt
+	} else {
+		logger.Info("artifact found", "revision", artifact.Spec.Revision)
+
 	}
 
 	// Revision here is the hash of the content of the downloaded file for example.
-	if err := r.Storage.ReconcileArtifact(ctx, obj, artifact, digest, tmpDir, digest+".tar.gz", func(artifact *artifactv1.Artifact, s string) error {
+	if err := r.Storage.ReconcileArtifact(ctx, obj, artifact, digest, tmpDir, digest+".tar.gz", func(art *artifactv1.Artifact, s string) error {
 		// Archive directory to storage
 		if err := r.Storage.Archive(artifact, tmpDir, nil); err != nil {
 			return fmt.Errorf("unable to archive artifact to storage: %w", err)
@@ -127,15 +130,20 @@ func (r *HttpReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctr
 		return ctrl.Result{}, fmt.Errorf("failed to reconcile artifact: %w", err)
 	}
 
-	if _, err = controllerutil.CreateOrUpdate(ctx, r.Client, artifact, func() error {
+	createArtifact := artifact.DeepCopy()
+	if _, err = controllerutil.CreateOrUpdate(ctx, r.Client, createArtifact, func() error {
 		if artifact.ObjectMeta.CreationTimestamp.IsZero() {
 			if err := controllerutil.SetOwnerReference(obj, artifact, r.Scheme); err != nil {
 				return fmt.Errorf("failed to set owner reference: %w", err)
 			}
 		}
 
-		artifact.Spec.Revision = digest
-		// digest is set during archive process. It ought to be in the status instead?
+		// mutate the existing object with the outside object.
+		createArtifact.Spec.Revision = artifact.Spec.Revision
+		createArtifact.Spec.Digest = artifact.Spec.Digest
+		createArtifact.Spec.URL = artifact.Spec.URL
+		createArtifact.Spec.LastUpdateTime = artifact.Spec.LastUpdateTime
+		createArtifact.Spec.Size = artifact.Spec.Size
 
 		return nil
 	}); err != nil {
@@ -154,18 +162,24 @@ func (r *HttpReconciler) SetupWithManager(_ context.Context, mgr ctrl.Manager) e
 
 // this should most likely be extracted into the controller-manager
 func (r *HttpReconciler) findArtifact(ctx context.Context, object client.Object) (*artifactv1.Artifact, error) {
-	for _, ch := range object.GetOwnerReferences() {
-		if ch.Kind == artifactv1.ArtifactKind {
-			artifact := &artifactv1.Artifact{}
-			if err := r.Get(ctx, types.NamespacedName{Name: ch.Name, Namespace: object.GetNamespace()}, artifact); err != nil {
-				if apierrors.IsNotFound(err) {
-					return artifact, nil
-				}
+	logger := log.FromContext(ctx).WithName("find-artifact")
+	// this should look through ALL the artifacts and look if the owner is THIS object.
+	list := &artifactv1.ArtifactList{}
+	if err := r.List(ctx, list, client.InNamespace(object.GetNamespace())); err != nil {
+		return nil, fmt.Errorf("failed to list artifacts: %w", err)
+	}
 
-				return nil, fmt.Errorf("failed to get artifact: %w", err)
+	for _, artifact := range list.Items {
+		if len(artifact.GetOwnerReferences()) != 1 {
+			logger.Info("artifact owner reference has more than or no owner reference(s)", "owners", len(artifact.GetOwnerReferences()))
+
+			continue
+		}
+
+		for _, owner := range artifact.OwnerReferences {
+			if owner.Name == object.GetName() {
+				return &artifact, nil
 			}
-
-			return artifact, nil
 		}
 	}
 

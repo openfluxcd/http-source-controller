@@ -87,15 +87,24 @@ func (f *Fetcher) Fetch(ctx context.Context, url, dir string, opts ...FetchOptio
 		return "", fmt.Errorf("failed to fetch url content with status code %d", resp.StatusCode)
 	}
 
-	file, err := os.Create(filepath.Join(dir, "archive.tar.gz"))
+	file, err := os.Create(filepath.Join(dir, "content.dat"))
 	if err != nil {
 		return "", fmt.Errorf("failed to open file for writing: %w", err)
 	}
 
-	defer file.Close()
-
 	if _, err := io.Copy(file, resp.Body); err != nil {
 		return "", fmt.Errorf("failed to copy file content: %w", err)
+	}
+
+	// close the file and open it again for the hash to work
+	if err := file.Close(); err != nil {
+		return "", fmt.Errorf("failed to close file: %w", err)
+	}
+
+	// This needs to some work since it's not an archive.
+	file, err = os.Open(filepath.Join(dir, "content.dat"))
+	if err != nil {
+		return "", fmt.Errorf("failed to open file for writing: %w", err)
 	}
 
 	// Create a new SHA256 hash
