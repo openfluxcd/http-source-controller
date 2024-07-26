@@ -47,7 +47,7 @@ func TestHttpReconciler_Reconcile(t *testing.T) {
 		Client        func(url string) client.Client
 		Scheme        *runtime.Scheme
 		Fetcher       func(client *http.Client) *fetcher.Fetcher
-		Storage       *storage.Storage
+		Storage       func(client.Client, *runtime.Scheme) *storage.Storage
 		AssertErr     func(t *testing.T, err error)
 		AssertObjects func(t *testing.T, client client.Client)
 	}
@@ -78,9 +78,9 @@ func TestHttpReconciler_Reconcile(t *testing.T) {
 				Content: "test-content",
 				Scheme:  env.scheme,
 				Fetcher: func(client *http.Client) *fetcher.Fetcher { return fetcher.NewFetcher(client) },
-				Storage: &storage.Storage{
-					BasePath: tmp,
-					Hostname: "hostname",
+				Storage: func(c client.Client, scheme *runtime.Scheme) *storage.Storage {
+					s, _ := storage.NewStorage(c, scheme, tmp, "hostname", 0, 0)
+					return s
 				},
 				AssertErr: func(t *testing.T, err error) {
 					require.NoError(t, err)
@@ -136,9 +136,9 @@ func TestHttpReconciler_Reconcile(t *testing.T) {
 				},
 				Scheme:  env.scheme,
 				Fetcher: func(client *http.Client) *fetcher.Fetcher { return fetcher.NewFetcher(client) },
-				Storage: &storage.Storage{
-					BasePath: tmp,
-					Hostname: "hostname",
+				Storage: func(c client.Client, scheme *runtime.Scheme) *storage.Storage {
+					s, _ := storage.NewStorage(c, scheme, tmp, "hostname", 0, 0)
+					return s
 				},
 				AssertErr: func(t *testing.T, err error) {
 					require.NoError(t, err)
@@ -176,7 +176,7 @@ func TestHttpReconciler_Reconcile(t *testing.T) {
 				Client:  c,
 				Scheme:  tt.fields.Scheme,
 				Fetcher: tt.fields.Fetcher(testserver.Client()),
-				Storage: tt.fields.Storage,
+				Storage: tt.fields.Storage(c, tt.fields.Scheme),
 			}
 			_, err := r.Reconcile(tt.args.ctx, tt.args.req)
 			tt.fields.AssertErr(t, err)

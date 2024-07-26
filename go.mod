@@ -10,7 +10,7 @@ require (
 	github.com/fluxcd/pkg/runtime v0.47.1
 	github.com/fluxcd/source-controller/api v1.3.0
 	github.com/openfluxcd/artifact v0.0.0-20240716155959-1444c21d5f7c
-	github.com/openfluxcd/controller-manager v0.0.0-20240725135903-2daf7fa4bef8
+	github.com/openfluxcd/controller-manager v0.0.0-20240726113741-ba786e83bf89
 	github.com/stretchr/testify v1.9.0
 	k8s.io/api v0.30.0
 	k8s.io/apimachinery v0.30.3
