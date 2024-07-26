@@ -43,6 +43,9 @@ type HttpStatus struct {
 	// LastAttemptedRevision is the revision of the last reconciliation attempt.
 	// +optional
 	LastAttemptedRevision string `json:"lastAttemptedRevision,omitempty"`
+
+	// ArtifactName present what the name of the generated artifact is.
+	ArtifactName string `json:"artifactName,omitempty"`
 }
 
 // GetConditions returns the status conditions of the object.

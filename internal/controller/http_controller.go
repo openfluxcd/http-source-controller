@@ -109,6 +109,8 @@ func (r *HttpReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctr
 			return fmt.Errorf("unable to archive artifact to storage: %w", err)
 		}
 
+		obj.Status.ArtifactName = art.Name
+
 		return nil
 	}); err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to reconcile artifact: %w", err)

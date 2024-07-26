@@ -48,6 +48,10 @@ spec:
           status:
             description: HttpStatus defines the observed state of Http
             properties:
+              artifactName:
+                description: ArtifactName present what the name of the generated artifact
+                  is.
+                type: string
               conditions:
                 items:
                   description: "Condition contains details for one aspect of the current
