@@ -23,6 +23,7 @@ import (
 // HttpSpec defines the desired state of Http
 type HttpSpec struct {
 	// URL defines where to get the archive from.
+	// Expects the content to be tar.gz.
 	URL string `json:"url"`
 }
 

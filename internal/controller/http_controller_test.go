@@ -21,6 +21,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"testing"
 
 	artifactv1 "github.com/openfluxcd/artifact/api/v1alpha1"
@@ -43,7 +44,7 @@ func TestHttpReconciler_Reconcile(t *testing.T) {
 	defer os.RemoveAll(tmp)
 
 	type fields struct {
-		Content       string
+		Content       func(t *testing.T) []byte
 		Client        func(url string) client.Client
 		Scheme        *runtime.Scheme
 		Fetcher       func(client *http.Client) *fetcher.Fetcher
@@ -75,7 +76,11 @@ func TestHttpReconciler_Reconcile(t *testing.T) {
 							},
 						}))
 				},
-				Content: "test-content",
+				Content: func(t *testing.T) []byte {
+					content, err := os.ReadFile(filepath.Join("testdata", "content.tar.gz"))
+					require.NoError(t, err)
+					return content
+				},
 				Scheme:  env.scheme,
 				Fetcher: func(client *http.Client) *fetcher.Fetcher { return fetcher.NewFetcher(client) },
 				Storage: func(c client.Client, scheme *runtime.Scheme) *storage.Storage {
@@ -87,13 +92,13 @@ func TestHttpReconciler_Reconcile(t *testing.T) {
 				},
 				AssertObjects: func(t *testing.T, client client.Client) {
 					artifact := &artifactv1.Artifact{}
-					err = client.Get(context.TODO(), types.NamespacedName{Name: "test-http", Namespace: "default"}, artifact)
+					err = client.Get(context.TODO(), types.NamespacedName{Name: "http-default-test-http", Namespace: "default"}, artifact)
 					require.NoError(t, err)
 					// <kind>/<namespace>/name>/<filename>
 					// The base name must not be there because the file server already adds that.
-					assert.Equal(t, "http://hostname/http/default/test-http/0a3666a0710c08aa6d0de92ce72beeb5b93124cce1bf3701c9d6cdeb543cb73e.tar.gz", artifact.Spec.URL)
-					assert.Equal(t, "0a3666a0710c08aa6d0de92ce72beeb5b93124cce1bf3701c9d6cdeb543cb73e", artifact.Spec.Revision)
-					assert.Equal(t, int64(128), *artifact.Spec.Size)
+					assert.Equal(t, "http://hostname/http/default/test-http/93693d51d12553f1cab7202ae120c1e1f55783f384cdad0266eeaed7b565d1c2.tar.gz", artifact.Spec.URL)
+					assert.Equal(t, "93693d51d12553f1cab7202ae120c1e1f55783f384cdad0266eeaed7b565d1c2", artifact.Spec.Revision)
+					assert.Equal(t, int64(298), *artifact.Spec.Size)
 				},
 			},
 			args: args{
@@ -109,7 +114,11 @@ func TestHttpReconciler_Reconcile(t *testing.T) {
 		{
 			name: "should update existing artifact",
 			fields: fields{
-				Content: "test-content-2",
+				Content: func(t *testing.T) []byte {
+					content, err := os.ReadFile(filepath.Join("testdata", "content-2.tar.gz"))
+					require.NoError(t, err)
+					return content
+				},
 				Client: func(url string) client.Client {
 					return env.FakeKubeClient(
 						WithObjects(&v1alpha1.Http{
@@ -145,12 +154,12 @@ func TestHttpReconciler_Reconcile(t *testing.T) {
 				},
 				AssertObjects: func(t *testing.T, client client.Client) {
 					artifact := &artifactv1.Artifact{}
-					err = client.Get(context.TODO(), types.NamespacedName{Name: "test-http-2", Namespace: "default"}, artifact)
+					err = client.Get(context.TODO(), types.NamespacedName{Name: "http-default-test-http-2", Namespace: "default"}, artifact)
 					require.NoError(t, err)
 					// <kind>/<namespace>/name>/<filename>
 					// The base name must not be there because the file server already adds that.
-					assert.Equal(t, "http://hostname/http/default/test-http-2/d1194ac44b3f0ec54854a5611f0b49d715f133f1bfa454d6de4dc1aa83b67e89.tar.gz", artifact.Spec.URL)
-					assert.Equal(t, "d1194ac44b3f0ec54854a5611f0b49d715f133f1bfa454d6de4dc1aa83b67e89", artifact.Spec.Revision)
+					assert.Equal(t, "http://hostname/http/default/test-http-2/0e921aca555e3eaa027993331151ec6c06db2a1004fdd6046cd2213b0ff9df05.tar.gz", artifact.Spec.URL)
+					assert.Equal(t, "0e921aca555e3eaa027993331151ec6c06db2a1004fdd6046cd2213b0ff9df05", artifact.Spec.Revision)
 				},
 			},
 			args: args{
@@ -167,11 +176,11 @@ func TestHttpReconciler_Reconcile(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			testserver := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				w.Write([]byte(tt.fields.Content))
+				w.Write(tt.fields.Content(t))
 			}))
 			defer testserver.Close()
 
-			c := tt.fields.Client(testserver.URL)
+			c := tt.fields.Client(testserver.URL + "/content.tar.gz")
 			r := &HttpReconciler{
 				Client:  c,
 				Scheme:  tt.fields.Scheme,

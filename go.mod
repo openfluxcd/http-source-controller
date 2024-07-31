@@ -8,9 +8,10 @@ replace github.com/opencontainers/go-digest => github.com/opencontainers/go-dige
 
 require (
 	github.com/fluxcd/pkg/runtime v0.47.1
+	github.com/fluxcd/pkg/tar v0.7.0
 	github.com/fluxcd/source-controller/api v1.3.0
 	github.com/openfluxcd/artifact v0.0.0-20240716155959-1444c21d5f7c
-	github.com/openfluxcd/controller-manager v0.0.0-20240726130527-f22bf8d3f9fc
+	github.com/openfluxcd/controller-manager v0.0.0-20240731140102-be5c90b6cc4a
 	github.com/stretchr/testify v1.9.0
 	k8s.io/api v0.30.0
 	k8s.io/apimachinery v0.30.3
@@ -31,7 +32,6 @@ require (
 	github.com/fluxcd/pkg/apis/meta v1.5.0 // indirect
 	github.com/fluxcd/pkg/lockedfile v0.3.0 // indirect
 	github.com/fluxcd/pkg/sourceignore v0.7.0 // indirect
-	github.com/fluxcd/pkg/tar v0.7.0 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect
 	github.com/go-git/go-billy/v5 v5.5.0 // indirect

@@ -40,7 +40,9 @@ spec:
             description: HttpSpec defines the desired state of Http
             properties:
               url:
-                description: URL defines where to get the archive from.
+                description: |-
+                  URL defines where to get the archive from.
+                  Expects the content to be tar.gz.
                 type: string
             required:
             - url

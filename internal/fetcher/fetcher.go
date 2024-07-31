@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+
+	"github.com/fluxcd/pkg/tar"
 )
 
 // Fetcher wraps an HTTP client.
@@ -87,30 +89,37 @@ func (f *Fetcher) Fetch(ctx context.Context, url, dir string, opts ...FetchOptio
 		return "", fmt.Errorf("failed to fetch url content with status code %d", resp.StatusCode)
 	}
 
-	file, err := os.Create(filepath.Join(dir, "content.dat"))
+	filename := filepath.Base(url)
+
+	file, err := os.Create(filepath.Join(dir, filename))
 	if err != nil {
 		return "", fmt.Errorf("failed to open file for writing: %w", err)
 	}
 
-	if _, err := io.Copy(file, resp.Body); err != nil {
+	// split the read to the file and the hash generator
+	tee := io.TeeReader(resp.Body, file)
+
+	// Create a new SHA256 hash
+	hash := sha256.New()
+	if _, err := io.Copy(hash, tee); err != nil {
 		return "", fmt.Errorf("failed to copy file content: %w", err)
 	}
 
-	// close the file and open it again for the hash to work
 	if err := file.Close(); err != nil {
 		return "", fmt.Errorf("failed to close file: %w", err)
 	}
 
-	// This needs to some work since it's not an archive.
-	file, err = os.Open(filepath.Join(dir, "content.dat"))
+	// re-open for the untar operation
+	file, err = os.Open(filepath.Join(dir, filename))
 	if err != nil {
 		return "", fmt.Errorf("failed to open file for writing: %w", err)
 	}
 
-	// Create a new SHA256 hash
-	hash := sha256.New()
-	if _, err := io.Copy(hash, file); err != nil {
-		return "", fmt.Errorf("failed to copy file content: %w", err)
+	defer file.Close()
+
+	// Untar the archive.
+	if err := tar.Untar(file, dir); err != nil {
+		return "", fmt.Errorf("failed to untar file content: %w", err)
 	}
 
 	return hex.EncodeToString(hash.Sum(nil)), nil
