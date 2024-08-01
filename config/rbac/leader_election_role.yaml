@@ -5,7 +5,7 @@ metadata:
   labels:
     app.kubernetes.io/name: http-source-controller
     app.kubernetes.io/managed-by: kustomize
-  name: leader-election-role
+  name: http-source-controller-leader-election-role
 rules:
 - apiGroups:
   - ""

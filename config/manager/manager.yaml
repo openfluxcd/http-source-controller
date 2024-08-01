@@ -2,7 +2,7 @@ apiVersion: v1
 kind: Namespace
 metadata:
   labels:
-    control-plane: controller-manager
+    control-plane: http-source-controller-manager
     app.kubernetes.io/name: http-source-controller
     app.kubernetes.io/managed-by: kustomize
   name: system
@@ -10,23 +10,23 @@ metadata:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: controller-manager
+  name: http-source-controller-manager
   namespace: system
   labels:
-    control-plane: controller-manager
+    control-plane: http-source-controller-manager
     app.kubernetes.io/name: http-source-controller
     app.kubernetes.io/managed-by: kustomize
 spec:
   selector:
     matchLabels:
-      control-plane: controller-manager
+      control-plane: http-source-controller-manager
   replicas: 1
   template:
     metadata:
       annotations:
         kubectl.kubernetes.io/default-container: manager
       labels:
-        control-plane: controller-manager
+        control-plane: http-source-controller-manager
     spec:
       securityContext:
         runAsNonRoot: true
@@ -35,7 +35,7 @@ spec:
         - /manager
         args:
         - --leader-elect
-        - --storage-adv-addr=http-source-controller.http-source-controller.svc.cluster.local.
+        - --storage-adv-addr=http-source-controller.http-source-controller-system.svc.cluster.local.
         image: openfluxcd/http-source-controller:latest
         name: manager
         imagePullPolicy: Always
@@ -72,5 +72,5 @@ spec:
       volumes:
         - name: data
           emptyDir: {}
-      serviceAccountName: controller-manager
+      serviceAccountName: http-source-controller-manager
       terminationGracePeriodSeconds: 10

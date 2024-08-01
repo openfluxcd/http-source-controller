@@ -13,7 +13,7 @@ install = kustomize('config/default')
 # running process.
 objects = decode_yaml_stream(install)
 for o in objects:
-    if o.get('kind') == 'Deployment' and o.get('metadata').get('name') == 'http-source-controller-controller-manager':
+    if o.get('kind') == 'Deployment' and o.get('metadata').get('name') == 'http-source-controller-manager':
         o['spec']['template']['spec']['containers'][0]['securityContext']['runAsNonRoot'] = False
         break
 
@@ -33,7 +33,7 @@ load('ext://restart_process', 'docker_build_with_restart')
 # Once done, rebuilding now should be a lot faster since only the relevant
 # binary is rebuilt and the hot swat wrapper takes care of the rest.
 local_resource(
-    'http-source-controller-controller-manager-binary',
+    'http-source-controller-manager-binary',
     'CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o bin/manager ./cmd/main.go',
     deps = [
         "cmd/main.go",
