@@ -5,6 +5,30 @@ Defines an `Http` source for the OpenFluxCD ecosystem.
 This source is capable of producing an [Artifact](https://github.com/openfluxcd/artifact) object that various other
 controllers can understand and consume.
 
+## Test Setup
+
+The next couple of scenarios assume an already configured test environment. Let's walk through how to set that up.
+
+### http-source-controller
+
+In all controllers, `tilt` has been set up to ease testing. Before that, however, we need to do two things.
+
+1. create a cluster using `kind create cluster` for example.
+2. The [artifact](https://github.com/openfluxcd/artifact/) repository contains a Kubernetes CRD that needs to be
+installed into the cluster. Either clone the repository and apply the CRD locally, or apply it using kubectl directly
+from the repository with `kubectl apply -f https://raw.githubusercontent.com/openfluxcd/artifact/main/config/crd/bases/openfluxcd.mandelsoft.org_artifacts.yaml`
+
+Once the cluster is up and running and we have the CRD installed, it's as easy as running `tilt up` in the
+repository root.
+
+### {kustomize,helm}-controller
+
+In both cases, a `Tiltfile` has been provided for easy testing. Just clone the repository from their respective
+locations under the openfluxcd organization and run `tilt up`.
+
+This will also start `source-controller` which isn't strickly needed, but for the CRDs it contains only.
+Now that everything is up and running, we can proceed with the [Basic Scenario](#basic-scenario).
+
 ## Basic Scenario
 
 This controller consumes a simple object for which the definition is such:
