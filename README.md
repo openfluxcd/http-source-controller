@@ -128,9 +128,9 @@ spec:
   interval: 10m
   targetNamespace: default
   sourceRef:
-    kind: Artifact
+    kind: Http
     name: http-http-source-controller-system-http-podinfo-kustomize
-    apiVersion: openfluxcd.mandelsoft.org/v1alpha1
+    apiVersion: openfluxcd.ocm.software.org/v1alpha1
   path: "."
   prune: true
   timeout: 1m
