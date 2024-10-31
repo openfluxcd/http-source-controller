@@ -129,8 +129,8 @@ spec:
   targetNamespace: default
   sourceRef:
     kind: Http
-    name: http-http-source-controller-system-http-podinfo-kustomize
-    apiVersion: openfluxcd.ocm.software.org/v1alpha1
+    name: http-podinfo-kustomize
+    apiVersion: openfluxcd.openfluxcd/v1alpha1
   path: "."
   prune: true
   timeout: 1m

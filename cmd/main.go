@@ -38,6 +38,7 @@ import (
 
 	artifactv1 "github.com/openfluxcd/artifact/api/v1alpha1"
 	"github.com/openfluxcd/controller-manager/server"
+
 	openfluxcdv1alpha1 "github.com/openfluxcd/http-source-controller/api/v1alpha1"
 	"github.com/openfluxcd/http-source-controller/internal/controller"
 	"github.com/openfluxcd/http-source-controller/internal/fetcher"
@@ -144,7 +145,7 @@ func main() {
 	fetch := fetcher.NewFetcher(&http.Client{
 		Timeout: 15 * time.Second,
 	})
-	starter, storage, err := server.InitializeStorage(mgr.GetClient(), mgr.GetScheme(), storagePath, storageAdvAddr, artifactRetentionTTL, artifactRetentionRecords)
+	storage, server, err := server.NewArtifactStore(mgr.GetClient(), mgr.GetScheme(), storagePath, storageAddr, storageAdvAddr, artifactRetentionTTL, artifactRetentionRecords)
 	if err != nil {
 		setupLog.Error(err, "unable to initialize storage")
 		os.Exit(1)
@@ -176,7 +177,7 @@ func main() {
 		// to handle that.
 		<-mgr.Elected()
 
-		if err := starter(storagePath, storageAddr); err != nil {
+		if err := server.Start(ctx); err != nil {
 			setupLog.Error(err, "unable to start storage server")
 		}
 	}()
